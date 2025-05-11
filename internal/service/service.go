@@ -2,6 +2,7 @@ package service
 
 import (
 	"strings"
+	"unicode"
 
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 )
@@ -17,12 +18,18 @@ func Conver(input string) (string, error) {
 	return morse.ToMorse(newInput), nil
 }
 
+// isMorse проверяет, состоит ли строка только из допустимых символов Морзе.
 func isMorse(input string) bool {
-	for _, char := range input {
-		if char != '.' && char != '-' && char != ' ' {
-			return false // Если встретился недопустимый символ, возвращаем false
-
-		}
+	// Допустимые символы Морзе: точки и тире
+	isMorseSymbol := func(r rune) bool {
+		return r == '.' || r == '-' || unicode.IsSpace(r)
 	}
-	return true // Если все символы допустимы, возвращаем true
+
+	// Проверяем, есть ли недопустимые символы
+	if strings.ContainsFunc(input, func(r rune) bool {
+		return !isMorseSymbol(r)
+	}) {
+		return false
+	}
+	return true
 }

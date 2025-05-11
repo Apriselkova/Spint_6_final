@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	// "fmt"
 	"io"
 	"log"
 	"net/http"
@@ -12,17 +13,24 @@ import (
 )
 
 func RootHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Обработка запроса к /")
-	http.ServeFile(w, r, "../index.html")
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	http.ServeFile(w, r, "./index.html")
 }
 
 func ParseHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Обработка запроса к форме")
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// получаем файл из формы
 	file, handler, err := r.FormFile("myFile")
 	if err != nil {
 		log.Println("Ошибка при получении файла")
-		http.Error(w, "ошибка при получении файла", http.StatusBadRequest)
+		http.Error(w, "ошибка при получении файла", http.StatusInternalServerError)
 		return
 	}
 	// закрываем файл
@@ -34,11 +42,17 @@ func ParseHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ошибка при чтении файла", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Имя файла: %s\n", handler.Filename)
-	log.Printf("Содержимое файла:\n%s\n", content)
+	// Преобразуем байтовый массив в строку
+	contentStr := string(content)
+
+	// Проверяем, является ли строка пустой или содержит только пробелы
+	if len(contentStr) == 0 {
+		http.Error(w, "Содержимое файла пустое", http.StatusBadRequest)
+		return
+	}
 
 	// Получаем переконвертируемую строку из функции service
-	convertedString, err := service.Conver(string(content))
+	convertedString, err := service.Conver(contentStr)
 	if err != nil {
 		log.Println("Ошибка при конвертации строки")
 		http.Error(w, "ошибка при конвертации строки", http.StatusInternalServerError)
@@ -61,6 +75,5 @@ func ParseHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ошибка при записи в файл", http.StatusInternalServerError)
 		return
 	}
-
-	w.Write([]byte("Входные данные: " + string(content) + "\nРезультат конвертации: " + string(convertedString)))
+	w.Write([]byte("Входные данные: " + contentStr + "\nРезультат конвертации: " + convertedString))
 }
